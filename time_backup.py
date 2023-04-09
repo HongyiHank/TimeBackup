@@ -55,7 +55,7 @@ class Configure(Serializable):
     files_rules: list[str] = [
         "!__pycache__/**",
         "!test",
-        "server/**",
+        "server/**/*",
     ]
     save_game_timeout: float = -1
     zip_type: str = "zip"  # zip, tar, tar.gz
@@ -160,6 +160,8 @@ class Timer:
             # session.lock raise PermissionError
             if not str(path).endswith("session.lock")
         ]
+        # for file in files:
+        #     print(str(file))
         all_files = len(files)
 
         path, index = zip_path / f"{base_filename}.{zip_type}", 1
