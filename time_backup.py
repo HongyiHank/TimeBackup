@@ -249,7 +249,7 @@ class Timer:
                 filename += f"_{comment}"
 
             def send_now(all: int, now: int):
-                if now % int(all / 2) == 0:
+                if now % int(all / 5) == 0:
                     step_int = int((step := now * 100 / all) / (100 / 10))
                     self.send(
                         f"[{'█'*step_int}{' '*(10-step_int)}] {step:.1f}%"
