@@ -1,0 +1,15 @@
+{
+  "id": "TimeBackup",
+  "version": "1.0.0",
+  "name": "time backup",
+  "description": {
+    "en_us": "A Minecraft Auto Backup Plugin",
+    "zh_cn": "定時創建永久 zip 壓縮的備份"
+  },
+  "author": "猴貓<a102009102009@gmail.com>",
+  "link": "https://github.com/mc-cloud-town/TimeBackup",
+  "dependencies": {
+    "mcdreforged": ">=2.0.0-"
+  },
+  "resources": ["LICENSE"]
+}
