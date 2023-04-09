@@ -160,8 +160,6 @@ class Timer:
             # session.lock raise PermissionError
             if not str(path).endswith("session.lock")
         ]
-        # for file in files:
-        #     print(str(file))
         all_files = len(files)
 
         path, index = zip_path / f"{base_filename}.{zip_type}", 1
