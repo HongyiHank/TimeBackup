@@ -70,15 +70,17 @@ def parse_paths(base_path: str | Path, rules: list[str]) -> list[str]:
     for rule in rules:
         pass_path = rule.startswith("!")
         if (path := Path(rule[1:])).is_file():
-            if pass_path and path in paths:
-                paths.remove(path)
+            if pass_path:
+                if path in paths:
+                    paths.remove(path)
                 continue
             paths.append(path)
             continue
 
         for path in base_path.rglob(rule[1:] if pass_path else rule):
-            if pass_path and path in paths:
-                paths.remove(path)
+            if pass_path:
+                if path in paths:
+                    paths.remove(path)
                 continue
             paths.append(path)
 
@@ -180,6 +182,9 @@ class Timer:
                     f.write(file)
             except PermissionError:
                 self.send(f"備份 {file} 無權限", broadcast=True)
+            except Exception as e:
+                self.server.logger.exception(e)
+
             if callback:
                 callback(all_files, index + 1)
 
@@ -264,6 +269,7 @@ class Timer:
             self.send("§c備份時發生錯誤，暫停備份§r", broadcast=True)
             self._backup_ing = False
         finally:
+            self._backup_ing = False
             self.creating_backup.release()
             self.server.execute("save-on")
             if done_callback:
