@@ -27,12 +27,12 @@ CONFIG_FILE = Path("config") / "AutoPermanentBackup.json"
 timer: Timer = None
 config: Configure
 PREFIX = "!!auto-backup"
-HELP_MESSAGE = """定時創建永久備份
-!!auto-backup 幫助
-!!auto-backup status 下次備份時間
-!!auto-backup enable 開啟
-!!auto-backup disable 關閉
-!!auto-backup make <備註(可選)> 手動創建備份
+HELP_MESSAGE = """定時創建永久備份:
+    !!auto-backup 幫助
+    !!auto-backup status: 下次備份時間
+    !!auto-backup enable: 開啟自動備份
+    !!auto-backup disable: 關閉自動備份
+    !!auto-backup make <備註(可選)>: 手動創建備份
 """
 
 
@@ -132,6 +132,8 @@ class Timer:
         self.server.save_config_simple(self.config, CONFIG_FILE, in_data_folder=False)
 
     def next_backup_message(self) -> str:
+        if not self.config.enabled:
+            return "無 (已關閉自動備份)"
         return time.strftime(
             "%Y/%m/%d %H:%M:%S",
             time.localtime(self.last_backup_time + self.backup_interval),
@@ -249,10 +251,10 @@ class Timer:
                 filename += f"_{comment}"
 
             def send_now(all: int, now: int):
-                if now % int(all / 5) == 0:
+                if now % int(all / 8) == 0 or all == now:
                     step_int = int((step := now * 100 / all) / (100 / 10))
                     self.send(
-                        f"[{'█'*step_int}{' '*(10-step_int)}] {step:.1f}%"
+                        f"[{'█'*step_int}{' '*(10-step_int)}] {step:04.1f}%"
                         f" [{all}/{(all-now):03d}]",
                         broadcast=True,
                     )
@@ -290,10 +292,12 @@ class Timer:
             while True:
                 if self._stop_event.wait(1):
                     return
+                if not self.config.enabled:
+                    continue
                 if time.time() - self.last_backup_time > self.backup_interval:
                     break
 
-            if self.server.is_server_startup() and self.config.enabled:
+            if self.server.is_server_startup():
                 try:
                     self.last_backup_time = time.time()
                     self.send("§6觸發定時備份...§r", broadcast=True)
@@ -317,20 +321,19 @@ def on_load(server: PluginServerInterface, ord):
         Literal(PREFIX)
         .runs(lambda src: src.reply(HELP_MESSAGE))
         .then(
-            Literal("status").runs(lambda src: src.reply(timer.next_backup_message()))
+            Literal("status").runs(
+                lambda src: src.reply(f"§6下次備份時間: {timer.next_backup_message()}§r")
+            )
         )
         .requires(lambda src: src.has_permission(timer.config.permission_requirement))
         .on_error(
             RequirementNotMet,
-            lambda src: (
-                src.reply(RText("權限錯誤", color=RColor.red)),
-                src.reply(timer.next_backup_message()),
-            ),
+            lambda src: (src.reply(RText("權限錯誤", color=RColor.red))),
             handled=True,
         )
         .on_error(
             UnknownArgument,
-            lambda src: src.reply("未知指令，輸入 {PREFIX} 查看幫助"),
+            lambda src: src.reply(f"未知指令，輸入 {PREFIX} 查看幫助"),
         )
         .then(
             Literal("enable").runs(
