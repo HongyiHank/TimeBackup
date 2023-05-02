@@ -10,6 +10,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from mcdreforged.api.all import (
     CommandSource,
     GreedyText,
+    Info,
     Literal,
     PluginServerInterface,
     RColor,
@@ -354,9 +355,13 @@ def on_load(server: PluginServerInterface, ord):
     timer.start()
 
 
-def on_info(_, info) -> None:
+def on_info(server: PluginServerInterface, info: Info) -> None:
     if not info.is_user and timer:
         timer.on_message(info.content)
+
+
+def on_unload(server: PluginServerInterface) -> None:
+    timer.stop()
 
 
 def on_mcdr_stop(server: PluginServerInterface) -> None:
