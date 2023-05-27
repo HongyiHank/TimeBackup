@@ -23,7 +23,7 @@ from mcdreforged.api.all import (
 
 STEP = 25
 BASE_PATH = Path("")
-CONFIG_FILE = Path("config") / "AutoPermanentBackup.json"
+CONFIG_FILE = "AutoPermanentBackup.json"
 
 timer: Timer = None
 config: Configure
