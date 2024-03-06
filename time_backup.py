@@ -4,7 +4,7 @@ import tarfile
 import time
 from pathlib import Path
 from threading import Event, Lock, Thread
-from typing import Callable
+from typing import Callable, Optional
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from mcdreforged.api.all import (
@@ -25,7 +25,7 @@ STEP = 25
 BASE_PATH = Path("")
 CONFIG_FILE = "AutoPermanentBackup.json"
 
-timer: Timer = None
+timer: Timer = None  # type: ignore
 config: Configure
 PREFIX = "!!auto-backup"
 HELP_MESSAGE = """定時創建永久備份:
@@ -41,7 +41,7 @@ def convert_bytes(size: int):
     for x in ["bytes", "KB", "MB", "GB", "TB"]:
         if size < 1024.0:
             return "%3.1f %s" % (size, x)
-        size /= 1024.0
+        size /= 1024.0  # type: ignore
 
 
 class Configure(Serializable):
@@ -64,9 +64,9 @@ class Configure(Serializable):
     minimum_permission_level: dict[str, int] = {}
 
 
-def parse_paths(base_path: str | Path, rules: list[str]) -> list[str]:
+def parse_paths(base_path: str | Path, rules: list[str]) -> list[Path]:
     base_path = Path(base_path)
-    paths: list[str] = []
+    paths: list[Path] = []
 
     for rule in rules:
         pass_path = rule.startswith("!")
@@ -92,7 +92,7 @@ def parse_interval(str_interval: str) -> int:
     digit, result = "", 0
     time_map = {"s": 1, "m": 60, "h": 3600, "d": 3600 * 24}
 
-    def add(s: str = "") -> tuple[int, int]:
+    def add(s: str = "") -> tuple[int, str]:
         return result + int(digit or 1) * time_map.get(s, 1), ""
 
     for s in str_interval + " ":
@@ -129,11 +129,11 @@ class Timer:
         self.last_backup_time = time.time()
 
     def set_enabled(self, enabled: bool) -> None:
-        self.config.enabled = enabled
+        self.config.enabled = enabled  # type: ignore
         self.server.save_config_simple(self.config, CONFIG_FILE, in_data_folder=False)
 
     def next_backup_message(self) -> str:
-        if not self.config.enabled:
+        if not self.config.enabled:  # type: ignore
             return "無 (已關閉自動備份)"
         return time.strftime(
             "%Y/%m/%d %H:%M:%S",
@@ -147,9 +147,9 @@ class Timer:
         callback: Callable[[int, int], None] | None = None,
     ) -> Path:
         rules, zip_path, zip_type, base_filename = (
-            self.config.files_rules,
-            Path(self.config.backup_path),
-            self.config.zip_type,
+            self.config.files_rules,  # type: ignore
+            Path(self.config.backup_path),  # type: ignore
+            self.config.zip_type,  # type: ignore
             format_file_name(filename),
         )
         zip_path.mkdir(parents=True, exist_ok=True)
@@ -213,22 +213,22 @@ class Timer:
         if (
             self._backup_ing
             and not self._saved_game_event.is_set()
-            and content in self.config.saved_world_keywords
+            and content in self.config.saved_world_keywords  # type: ignore
         ):
             self._saved_game_event.set()
 
     @new_thread("time-backup")
     def create_backup(
         self,
-        source: CommandSource = None,
+        source: Optional[CommandSource] = None,
         ctx: dict = {},
-        done_callback: Callable = None,
+        done_callback: Optional[Callable] = None,
     ) -> None:
         if self._backup_ing and source:
             self.send("§c正在備份中，請勿重複輸入§r", source=source)
             return
 
-        if not self.config.enabled:
+        if not self.config.enabled:  # type: ignore
             return
 
         start_time = time.time()
@@ -240,7 +240,7 @@ class Timer:
         self.server.execute("save-all flush")
         self._saved_game_event.clear()
 
-        timeout = self.config.save_game_timeout
+        timeout = self.config.save_game_timeout  # type: ignore
         if not self._saved_game_event.wait(None if timeout < 0 else timeout):
             self.send("§c備份超時，暫停備份§r", broadcast=True)
             self._backup_ing = False
@@ -255,8 +255,7 @@ class Timer:
                 if now % int(all / 8) == 0 or all == now:
                     step_int = int((step := now * 100 / all) / (100 / 10))
                     self.send(
-                        f"[{'█'*step_int}{' '*(10-step_int)}] {step:04.1f}%"
-                        f" [{all}/{(all-now):03d}]",
+                        f"[{'█'*step_int}{' '*(10-step_int)}] {step:04.1f}%" f" [{all}/{(all-now):03d}]",
                         broadcast=True,
                     )
 
@@ -286,14 +285,14 @@ class Timer:
 
     @property
     def backup_interval(self):
-        return parse_interval(self.config.interval)
+        return parse_interval(self.config.interval)  # type: ignore
 
     def loop(self):
         while True:
             while True:
                 if self._stop_event.wait(1):
                     return
-                if not self.config.enabled:
+                if not self.config.enabled:  # type: ignore
                     continue
                 if time.time() - self.last_backup_time > self.backup_interval:
                     break
@@ -303,7 +302,7 @@ class Timer:
                     self.last_backup_time = time.time()
                     self.send("§6觸發定時備份...§r", broadcast=True)
                     self.create_backup(
-                        done_callback=lambda: self.send(
+                        done_callback=lambda: self.send(  # type: ignore
                             f"§6下次備份時間 {self.next_backup_message()}§r",
                             broadcast=True,
                         )
@@ -322,11 +321,9 @@ def on_load(server: PluginServerInterface, ord):
         Literal(PREFIX)
         .runs(lambda src: src.reply(HELP_MESSAGE))
         .then(
-            Literal("status").runs(
-                lambda src: src.reply(f"§6下次備份時間: {timer.next_backup_message()}§r")
-            )
+            Literal("status").runs(lambda src: src.reply(f"§6下次備份時間: {timer.next_backup_message()}§r"))
         )
-        .requires(lambda src: src.has_permission(timer.config.permission_requirement))
+        .requires(lambda src: src.has_permission(timer.config.permission_requirement))  # type: ignore
         .on_error(
             RequirementNotMet,
             lambda src: (src.reply(RText("權限錯誤", color=RColor.red))),
@@ -336,27 +333,19 @@ def on_load(server: PluginServerInterface, ord):
             UnknownArgument,
             lambda src: src.reply(f"未知指令，輸入 {PREFIX} 查看幫助"),
         )
-        .then(
-            Literal("enable").runs(
-                lambda src: (timer.set_enabled(True), src.reply("啟動自動備份"))
-            )
-        )
-        .then(
-            Literal("disable").runs(
-                lambda src: (timer.set_enabled(False), src.reply("關閉自動備份"))
-            )
-        )
+        .then(Literal("enable").runs(lambda src: (timer.set_enabled(True), src.reply("啟動自動備份"))))
+        .then(Literal("disable").runs(lambda src: (timer.set_enabled(False), src.reply("關閉自動備份"))))
         .then(
             Literal("make")
-            .runs(timer.create_backup)
-            .then(GreedyText("cmt").runs(timer.create_backup))
-        )
+            .runs(timer.create_backup)  # type: ignore
+            .then(GreedyText("cmt").runs(timer.create_backup))  # type: ignore
+        )  # type: ignore
     )
     timer.start()
 
 
 def on_info(server: PluginServerInterface, info: Info) -> None:
-    if not info.is_user and timer:
+    if not info.is_user and timer and info.content:
         timer.on_message(info.content)
 
 
