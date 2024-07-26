@@ -21,6 +21,18 @@ from mcdreforged.api.all import (
     new_thread,
 )
 
+PLUGIN_METADATA = {
+    "id": "time_backup",
+    'version': '1.0.0',
+    'name': 'TimeBackup',
+    "description": {
+        "en_us": "A Minecraft Auto Backup Plugin",
+        "zh_cn": "定時創建永久 zip 壓縮的備份"
+    },
+    'author': '猴貓<a102009102009@gmail.com>',
+    'link': 'https://github.com/mc-cloud-town/TimeBackup'
+}
+
 STEP = 25
 BASE_PATH = Path("")
 CONFIG_FILE = "AutoPermanentBackup.json"
